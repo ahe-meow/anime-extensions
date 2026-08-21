@@ -90,7 +90,9 @@ class M3u8HttpServer(
             }
         }
 
-        Log.d(tag, "Response status: ${response.status}")
+        if (!uri.startsWith("/segment")) {
+            Log.d(tag, "Response status: ${response.status}")
+        }
         return response
     }
 
@@ -123,7 +125,7 @@ class M3u8HttpServer(
             Log.w(tag, "Upstream HTTP ${e.code} for M3U8 request")
             passThroughStatus(e)
         } catch (e: Exception) {
-            Log.e(tag, "Error processing M3U8: ${e.javaClass.simpleName}")
+            Log.e(tag, "Error processing M3U8: ${e.javaClass.simpleName}", e)
             newFixedLengthResponse(Status.INTERNAL_ERROR, MIME_PLAINTEXT, "Error: ${e.message}")
         }
     }
@@ -152,7 +154,7 @@ class M3u8HttpServer(
             Log.w(tag, "Upstream segment HTTP ${e.code}")
             passThroughStatus(e)
         } catch (e: Exception) {
-            Log.e(tag, "Error processing segment request: ${e.javaClass.simpleName}")
+            Log.e(tag, "Error processing segment request: ${e.javaClass.simpleName}", e)
             newFixedLengthResponse(Status.INTERNAL_ERROR, MIME_PLAINTEXT, "Error: ${e.message}")
         }
     }
@@ -308,7 +310,7 @@ class M3u8HttpServer(
             Log.w(tag, "Segment fetch upstream HTTP ${e.code}")
             throw e
         } catch (e: Exception) {
-            Log.e(tag, "Error processing segment: ${e.javaClass.simpleName}")
+            Log.e(tag, "Error processing segment: ${e.javaClass.simpleName}", e)
             throw UpstreamStatusException(503, url, "Error processing segment: ${e.message}", e)
         }
     }
