@@ -103,7 +103,7 @@ class M3u8HttpServer(
         val headers = extractHeadersFromSession(session, fallbackReferer, fallbackUserAgent, fallbackOrigin)
 
         Log.d(tag, "Processing M3U8 request")
-        Log.d(tag, "Headers: $headers")
+        Log.d(tag, "Extracted upstream header names: ${headers.keys}")
 
         if (url.isNullOrBlank()) {
             Log.w(tag, "Missing URL parameter in M3U8 request")
@@ -220,7 +220,6 @@ class M3u8HttpServer(
         session.headers.forEach { (key, value) ->
             when (key.lowercase()) {
                 "user-agent", "referer", "origin", "accept", "accept-language",
-                "accept-encoding",
                 -> {
                     headers[key.lowercase()] = value
                 }
@@ -326,13 +325,35 @@ class M3u8HttpServer(
         }
         val request = requestBuilder.build()
 
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                Log.e(tag, "Failed to fetch segment, HTTP code: ${response.code}")
-                throw UpstreamStatusException(response.code, url, "Failed to fetch segment")
+        try {
+            fetchSegmentBytes(client, request, url)
+        } catch (primary: UpstreamStatusException) {
+            throw primary
+        } catch (primary: Exception) {
+            Log.w(
+                tag,
+                "Primary segment client failed: ${primary.javaClass.simpleName}; " +
+                    if (fallbackClient != null) "attempting fallback" else "no fallback configured",
+            )
+            val fb = fallbackClient ?: throw UpstreamStatusException(503, url, "Primary segment client failed", primary)
+
+            try {
+                fetchSegmentBytes(fb, request, url)
+            } catch (fallback: UpstreamStatusException) {
+                throw fallback
+            } catch (fallback: Exception) {
+                Log.e(tag, "Segment fallback client threw: ${fallback.javaClass.simpleName}", fallback)
+                throw UpstreamStatusException(503, url, "Both primary and fallback segment clients failed", primary)
             }
-            response.body.bytes()
         }
+    }
+
+    private fun fetchSegmentBytes(client: OkHttpClient, request: Request, url: String): ByteArray = client.newCall(request).execute().use { response ->
+        if (!response.isSuccessful) {
+            Log.e(tag, "Failed to fetch segment, HTTP code: ${response.code}")
+            throw UpstreamStatusException(response.code, url, "Failed to fetch segment")
+        }
+        response.body.bytes()
     }
 
     private fun stripInterleavedJunk(fullData: ByteArray): ByteArray {
@@ -538,7 +559,7 @@ class M3u8HttpServer(
                                     url = resolvedKeyUrl,
                                     iv = iv?.let { it.normalizeHlsIv() } ?: segmentSequence.toHlsIv(),
                                 )
-                                Log.d(tag, "AES-128 detected, intercepting key at proxy: $resolvedKeyUrl (iv=${currentKey!!.iv})")
+                                Log.d(tag, "AES-128 detected, intercepting key at proxy")
                             }
                         }
                         "NONE" -> {

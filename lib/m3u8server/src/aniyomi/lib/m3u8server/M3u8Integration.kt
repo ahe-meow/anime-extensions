@@ -46,12 +46,12 @@ class M3u8Integration(
         val origin = originalVideo.headers?.get("Origin")
         val processedUrl = serverManager.processM3u8Url(originalVideo.url, referer, userAgent, origin)
         return Video(
-            originalVideo.url,
-            originalVideo.quality,
-            processedUrl ?: originalVideo.url,
-            originalVideo.headers,
-            originalVideo.subtitleTracks,
-            originalVideo.audioTracks,
+            url = originalVideo.url,
+            quality = originalVideo.quality,
+            videoUrl = processedUrl ?: originalVideo.url,
+            headers = originalVideo.headers,
+            subtitleTracks = originalVideo.subtitleTracks,
+            audioTracks = originalVideo.audioTracks,
         )
     }
 

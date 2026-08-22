@@ -248,8 +248,8 @@ class MissAV :
         val quality = preferences.getString(PREF_QUALITY, PREF_QUALITY_DEFAULT)!!
 
         return sortedWith(
-            compareBy { it.quality.contains(quality) },
-        ).reversed()
+            compareByDescending<Video> { it.quality.contains(quality) },
+        )
     }
 
     override fun setupPreferenceScreen(screen: PreferenceScreen) {
