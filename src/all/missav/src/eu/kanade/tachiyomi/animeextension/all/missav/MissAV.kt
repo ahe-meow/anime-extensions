@@ -248,7 +248,10 @@ class MissAV :
         val quality = preferences.getString(PREF_QUALITY, PREF_QUALITY_DEFAULT)!!
 
         return sortedWith(
-            compareByDescending<Video> { it.quality.contains(quality) },
+            compareByDescending<Video> { it.quality.contains(quality) }
+                .thenByDescending {
+                    resolutionRegex.find(it.quality)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+                },
         )
     }
 
@@ -306,6 +309,7 @@ class MissAV :
         private const val PREF_UUID_KEY = "missav_uuid"
 
         private val regexWhitespace = Regex("\\s+")
+        private val resolutionRegex = Regex("""(\d{3,4})p""")
         private val regexSpecialCharacters =
             Regex("([-.!~#$%^&*+_|/\\\\,?:;'“”‘’\"<>(){}\\[\\]。・～：—！？、―«»《》〘〙【】「」｜]|\\s-|-\\s|\\s\\.|\\.\\s)")
         private val regexNumberOnly = Regex("^\\d+$")
