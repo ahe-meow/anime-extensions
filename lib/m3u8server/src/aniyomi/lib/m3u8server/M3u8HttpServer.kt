@@ -434,6 +434,10 @@ class M3u8HttpServer(
         "M3U8 HTTP Server is not running"
     }
 
+    /**
+     * Fetches and validates playlist content, using the fallback client when
+     * the primary client throws.
+     */
     private suspend fun fetchM3u8Content(url: String, headers: Map<String, String> = emptyMap()): String = withContext(Dispatchers.IO) {
         Log.d(tag, "Making HTTP request to fetch M3U8 content")
 
