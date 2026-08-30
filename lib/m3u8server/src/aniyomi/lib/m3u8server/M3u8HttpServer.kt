@@ -72,6 +72,9 @@ class M3u8HttpServer(
 
     fun isRunning(): Boolean = isRunning
 
+    /**
+     * Routes local proxy requests to playlist, segment, or health handlers.
+     */
     override fun handle(session: IHTTPSession): Response {
         val uri = session.uri
         val method = session.method
@@ -96,6 +99,9 @@ class M3u8HttpServer(
         return response
     }
 
+    /**
+     * Fetches and rewrites a playlist for the local proxy.
+     */
     private fun handleM3u8Request(session: IHTTPSession): Response {
         val url = session.parameters["url"]?.first()
         val fallbackReferer = session.parameters["referer"]?.first()
@@ -130,6 +136,9 @@ class M3u8HttpServer(
         }
     }
 
+    /**
+     * Fetches, decrypts, and serves a media segment.
+     */
     private fun handleSegmentRequest(session: IHTTPSession): Response {
         val url = session.parameters["url"]?.first()
         val keyUrl = session.parameters["key"]?.first()
@@ -167,9 +176,9 @@ class M3u8HttpServer(
     /**
      * Wraps the [UpstreamStatusException] code in an HTTP response that
      * surfaces the upstream's status (403, 503, …) to the player instead of
-     * collapsing every failure into [Status.INTERNAL_ERROR]. The body carries
-     * the upstream URL + code so logcat / mpv diagnostics can pin the cause
-     * without re-reading the chain.
+     * collapsing every failure into [Status.INTERNAL_ERROR]. The body is
+     * deliberately generic so it never exposes upstream URLs or exception
+     * details to the media client.
      */
     private fun passThroughStatus(e: UpstreamStatusException): Response {
         val nanoStatus = when (e.code) {
@@ -182,7 +191,7 @@ class M3u8HttpServer(
             503 -> Status.SERVICE_UNAVAILABLE
             else -> Status.INTERNAL_ERROR
         }
-        val body = "Upstream ${e.code} for ${e.url}\n${e.message}"
+        val body = "Upstream request failed"
         return newFixedLengthResponse(nanoStatus, MIME_PLAINTEXT, body)
     }
 
@@ -319,6 +328,10 @@ class M3u8HttpServer(
         }
     }
 
+    /**
+     * Fetches a segment with the primary client and retries client failures
+     * with the optional fallback client.
+     */
     private suspend fun fetchSegmentBytes(url: String, headers: Map<String, String>): ByteArray = withContext(Dispatchers.IO) {
         val requestBuilder = Request.Builder().url(url)
         headers.forEach { (key, value) ->
@@ -349,6 +362,10 @@ class M3u8HttpServer(
         }
     }
 
+    /**
+     * Fetches one segment request and maps non-success responses to an
+     * [UpstreamStatusException].
+     */
     private fun fetchSegmentBytes(client: OkHttpClient, request: Request, url: String): ByteArray = client.newCall(request).execute().use { response ->
         if (!response.isSuccessful) {
             Log.e(tag, "Failed to fetch segment, HTTP code: ${response.code}")
@@ -491,14 +508,18 @@ class M3u8HttpServer(
 
     /**
      * Creates a local M3U8 URL that re-enters this server at `/m3u8`. The
-     * caller can attach the original extension's [referer] and [userAgent]
-     * so the upstream-fetch path can re-issue them even when the media
-     * player (mpv / ExoPlayer) does not carry them through to localhost.
+     * caller can attach the original extension's [referer], [userAgent], and
+     * [origin] so the upstream-fetch path can re-issue them even when the
+     * media player (mpv / ExoPlayer) does not carry them through to localhost.
+     * The optional [origin] is encoded into the URL and propagated to nested
+     * playlists and segments.
      *
      * This is the root-cause fix for Cloudflare-fronted CDNs that reject
      * null-Referer (or wrong-Referer) requests with a 403 — the m3u8 server
      * would otherwise hit the upstream with whatever headers the player
      * copied to localhost, which on most MPV integrations is "no Referer".
+     *
+     * @param origin optional Origin header to propagate through the proxy chain
      */
     fun createLocalUrl(
         m3u8Url: String,
@@ -520,6 +541,9 @@ class M3u8HttpServer(
         return sb.toString()
     }
 
+    /**
+     * Rewrites playlist entries to local playlist, key, and segment endpoints.
+     */
     private fun modifyM3u8Content(
         content: String,
         originalUrl: String,
@@ -598,6 +622,9 @@ class M3u8HttpServer(
         return modifiedLines.joinToString("\n")
     }
 
+    /**
+     * Builds a local URL for a nested playlist and propagates request headers.
+     */
     private fun buildChildM3u8Url(
         serverPort: Int,
         m3u8Url: String,
@@ -629,6 +656,9 @@ class M3u8HttpServer(
 
     private fun resolveHlsUrl(baseHttpUrl: HttpUrl?, uri: String): String = baseHttpUrl?.resolve(uri)?.toString() ?: uri
 
+    /**
+     * Builds a local URL for a segment and its optional encryption key.
+     */
     private fun createLocalSegmentUrl(
         serverPort: Int,
         segmentUrl: String,

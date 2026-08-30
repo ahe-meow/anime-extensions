@@ -63,6 +63,8 @@ class M3u8ServerManager(
      *   [M3u8HttpServer.createLocalUrl] for why this is the root-cause fix
      *   for Cloudflare-fronted CDNs that 403 on null-Referer requests.
      * @param userAgent optional User-Agent to encode alongside the referer.
+     * @param origin optional Origin to encode and propagate to nested playlists
+     *   and segments.
      * @return Processed M3U8 content as a local URL string
      */
     fun processM3u8Url(

@@ -244,6 +244,9 @@ class MissAV :
             .let(m3u8Integration::processVideoList)
     }
 
+    /**
+     * Sorts videos by preferred quality and then descending resolution.
+     */
     override fun List<Video>.sort(): List<Video> {
         val quality = preferences.getString(PREF_QUALITY, PREF_QUALITY_DEFAULT)!!
 

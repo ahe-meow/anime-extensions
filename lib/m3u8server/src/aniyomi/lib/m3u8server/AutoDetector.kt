@@ -126,6 +126,9 @@ object AutoDetector {
         return mergeRegions(regions)
     }
 
+    /**
+     * Returns true when the buffer is a complete, packet-aligned MPEG-TS stream.
+     */
     private fun isMpegTsPacketAligned(data: ByteArray): Boolean {
         if (data.size < MPEG_TS_PACKET_SIZE * 3 || data.size % MPEG_TS_PACKET_SIZE != 0) return false
         for (offset in data.indices step MPEG_TS_PACKET_SIZE) {
