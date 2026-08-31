@@ -453,8 +453,10 @@ class RouVideo(
 
     // ============================ Video Links =============================
 
+    /** Fetches the episode page containing the encoded video data. */
     override fun videoListRequest(episode: SEpisode) = GET(getEpisodeUrl(episode), docHeaders)
 
+    /** Decodes the episode data, extracts HLS variants, and proxies them through the local m3u8 server. */
     override fun videoListParse(response: Response): List<Video> {
         val data = response.asJsoup().selectFirst("script#__NEXT_DATA__")?.data()
             ?: return emptyList()
@@ -478,6 +480,7 @@ class RouVideo(
 
     private val resolutionRegex = Regex("""Resolution: (\d+)p""")
     companion object {
+        /** Converts RouVideo API and CDN playlist endpoints to normalized HLS playlist URLs. */
         internal fun normalizePlaylistUrl(url: String): String {
             val httpUrl = VIDEO_ORIGIN.toHttpUrl().resolve(url)
                 ?: throw IllegalArgumentException("Invalid playlist URL")

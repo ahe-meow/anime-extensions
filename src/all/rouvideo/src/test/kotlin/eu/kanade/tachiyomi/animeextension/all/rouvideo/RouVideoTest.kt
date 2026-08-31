@@ -1,14 +1,15 @@
 package eu.kanade.tachiyomi.animeextension.all.rouvideo
 
-import java.util.Base64 as JavaBase64
 import aniyomi.lib.m3u8server.M3u8Integration
 import eu.kanade.tachiyomi.animesource.model.Video
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.Base64 as JavaBase64
 
 class RouVideoTest {
+    /** Verifies that additive Base64 video data is decoded back to its original JSON. */
     @Test
     fun `decodes offset base64 video data`() {
         val original = """{"videoUrl":"https://example.com/video.m3u8"}"""
@@ -19,9 +20,10 @@ class RouVideoTest {
                 .toByteArray(),
         )
 
-        assertEquals(original, RouVideoDto.decodeVideoData(encoded, k))
+        assertEquals(original, RouVideoDto.decodeVideoData(JavaBase64.getDecoder().decode(encoded), k))
     }
 
+    /** Verifies that a relative RouVideo HLS endpoint resolves against the RouVideo origin. */
     @Test
     fun `normalizes relative hls endpoint against rouvideo origin`() {
         assertEquals(
@@ -30,6 +32,7 @@ class RouVideoTest {
         )
     }
 
+    /** Verifies that an HTTPS CDN index image URL becomes an HTTPS HLS playlist URL. */
     @Test
     fun `preserves https while converting index jpg playlist urls`() {
         assertEquals(
@@ -38,6 +41,7 @@ class RouVideoTest {
         )
     }
 
+    /** Verifies that RouVideo API HLS URLs are routed through the local m3u8 server. */
     @Test
     fun `routes api hls videos through local m3u8 server`() {
         val playlistUrl = RouVideo.normalizePlaylistUrl("/api/hls/example")

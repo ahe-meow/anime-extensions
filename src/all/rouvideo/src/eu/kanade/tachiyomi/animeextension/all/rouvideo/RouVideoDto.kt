@@ -147,7 +147,11 @@ internal object RouVideoDto {
         val thumbVTTUrl: String? = null,
     )
 
-    internal fun decodeVideoData(data: String, k: Int): String = Base64.decode(data, Base64.DEFAULT)
+    /** Reverses RouVideo's additive Base64 encoding to recover the video data JSON. */
+    internal fun decodeVideoData(data: String, k: Int): String = decodeVideoData(Base64.decode(data, Base64.DEFAULT), k)
+
+    /** Reverses RouVideo's additive Base64 encoding from decoded bytes. */
+    internal fun decodeVideoData(data: ByteArray, k: Int): String = data
         .map { byte -> ((byte.toInt() and 0xFF) - k).toByte() }
         .toByteArray()
         .toString(Charsets.UTF_8)
