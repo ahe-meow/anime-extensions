@@ -12,11 +12,11 @@ import eu.kanade.tachiyomi.animesource.model.AnimesPage
 import eu.kanade.tachiyomi.animesource.model.SAnime
 import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
-import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.util.asJsoup
 import keiyoushi.lib.unpacker.Unpacker
+import keiyoushi.utils.AnimeHttpLegacySource
 import keiyoushi.utils.LazyMutable
 import keiyoushi.utils.addListPreference
 import keiyoushi.utils.delegate
@@ -33,7 +33,7 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.ConcurrentHashMap
 
 class MissAV :
-    AnimeHttpSource(),
+    AnimeHttpLegacySource(),
     ConfigurableAnimeSource {
 
     override val name = "MissAV"
@@ -247,13 +247,13 @@ class MissAV :
     /**
      * Sorts videos by preferred quality and then descending resolution.
      */
-    override fun List<Video>.sort(): List<Video> {
+    override fun List<Video>.sortVideos(): List<Video> {
         val quality = preferences.getString(PREF_QUALITY, PREF_QUALITY_DEFAULT)!!
 
         return sortedWith(
-            compareByDescending<Video> { it.quality.contains(quality) }
+            compareByDescending<Video> { it.videoTitle.contains(quality) }
                 .thenByDescending {
-                    resolutionRegex.find(it.quality)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+                    resolutionRegex.find(it.videoTitle)?.groupValues?.get(1)?.toIntOrNull() ?: 0
                 },
         )
     }

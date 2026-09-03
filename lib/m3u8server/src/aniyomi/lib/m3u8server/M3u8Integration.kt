@@ -44,11 +44,11 @@ class M3u8Integration(
         val referer = originalVideo.headers?.get("Referer")
         val userAgent = originalVideo.headers?.get("User-Agent")
         val origin = originalVideo.headers?.get("Origin")
-        val processedUrl = serverManager.processM3u8Url(originalVideo.url, referer, userAgent, origin)
+        val processedUrl = serverManager.processM3u8Url(originalVideo.videoUrl, referer, userAgent, origin)
         return Video(
-            url = originalVideo.url,
-            quality = originalVideo.quality,
-            videoUrl = processedUrl ?: originalVideo.url,
+            url = originalVideo.videoUrl,
+            quality = originalVideo.videoTitle,
+            videoUrl = processedUrl ?: originalVideo.videoUrl,
             headers = originalVideo.headers,
             subtitleTracks = originalVideo.subtitleTracks,
             audioTracks = originalVideo.audioTracks,
@@ -62,11 +62,11 @@ class M3u8Integration(
      * @return Processed video list
      */
     fun processVideoList(videos: List<Video>): List<Video> {
-        if (videos.none { isM3u8Url(it.url) }) return videos
+        if (videos.none { isM3u8Url(it.videoUrl) }) return videos
 
         initializeServer()
         return videos.map { video ->
-            if (isM3u8Url(video.url)) {
+            if (isM3u8Url(video.videoUrl)) {
                 processM3u8Video(video)
             } else {
                 video
